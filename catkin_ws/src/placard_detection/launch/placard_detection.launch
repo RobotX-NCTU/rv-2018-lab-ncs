@@ -1,0 +1,21 @@
+<launch>
+	<arg name="model_name" default="CaffeNet"/>
+    <arg name="local" default="false" doc="true for running on laptop. false for running on vehicle."/>
+
+    <!-- Pi Camera -->
+    <node unless="$(arg local)" name="camera_white_balance" pkg="placard_detection" type="camera_white_balance.py" output="screen" clear_params="true" required="true">
+        <rosparam command="load" file="$(find placard_detection)/config/pi_camera.yaml"/>
+    </node>
+
+    <!-- Region potential extract node by MSER -->
+    <remap from="mser_region_extraction/compressed/image_compressed" to="/wama/camera_node/image/compressed"/>
+    <node name="mser_region_extraction" pkg="placard_detection" type="mser_region_extraction.py"  output="screen" clear_params="true" required="true">
+    </node>
+
+    <!-- NCS prediction -->
+    <remap from="placard_prediction_ncs/region_proposal" to="/mser_region_extraction/region_proposal"/>
+    <node name="placard_prediction_ncs" pkg="placard_detection" type="placard_prediction_ncs.py"  output="screen" clear_params="true" required="true">
+        <param name="model_name" value="$(arg model_name)"/>
+    </node>    
+
+</launch>
