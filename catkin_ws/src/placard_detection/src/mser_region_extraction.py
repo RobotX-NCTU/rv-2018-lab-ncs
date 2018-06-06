@@ -19,23 +19,28 @@ class MserRegionExtraction(object):
         #Publisher
         self.pub_image_region_mser = rospy.Publisher("~region_proposal", RegionProposalImage, queue_size=1)
         self.pub_image_all_mser = rospy.Publisher("~image/image_mser_all_region", Image, queue_size=1)
+        self.pub_image_origin   = rospy.Publisher("~image/image_raw", Image, queue_size=1)
 
         #Subscriber
         self.sub_image = rospy.Subscriber("~compressed/image_compressed", CompressedImage, self.cbCompressedImage, queue_size=1)
 
     def cbCompressedImage(self, image_msg):
-        if self.counts == 10:
+        if self.counts == 15:
+            
             self.counts = 0
-
-            if len(image_msg.data) is 0 :
-                return
-            np_arr = np.fromstring(image_msg.data, np.uint8)
-
             # ***************************************************************
             # Transfer compressed image to opencv image
             # Pi camera image shape (480, 680, 3)
             # ***************************************************************
+            if len(image_msg.data) is 0 :
+                return
+            np_arr = np.fromstring(image_msg.data, np.uint8)
             img_cv = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+            img_msg = Image()
+            img_msg.header.stamp = rospy.Time.now()
+            img_msg = self.bridge.cv2_to_imgmsg(img_cv, "bgr8")
+            self.pub_image_origin.publish(img_msg)
     
             # ***************************************************************
             # Transfer BGR to gray image
@@ -62,13 +67,9 @@ class MserRegionExtraction(object):
                     img_msg = Image()
                     img_msg.header.stamp = rospy.Time.now()
                     img_msg = self.bridge.cv2_to_imgmsg(img_region, "bgr8")
-                    
+            
                     region_msg = RegionProposalImage()
-                    region_msg.header.stamp = rospy.Time.now()
                     region_msg.image_region = img_msg
-
-                    img_msg = self.bridge.cv2_to_imgmsg(img_cv, "bgr8")
-                    region_msg.image_origin = img_msg
                     region_msg.x = x
                     region_msg.y = y
                     region_msg.width = w

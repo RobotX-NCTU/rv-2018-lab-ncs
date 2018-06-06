@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import rospy
 from sensor_msgs.msg import Image, CompressedImage
+from placard_msgs.msg import RegionProposalImage
 import os
-
+import rospkg
 from cv_bridge import CvBridge, CvBridgeError
 from mvnc import mvncapi as mvnc
 import cv2
@@ -12,18 +13,21 @@ class PlacardNcsPredictionNode(object):
     def __init__(self):
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing " %(self.node_name))
-
-        #Variables
-        self.bridge = CvBridge()
+        # ***************************************************************
+        # Get the position of graph folder
+        # ***************************************************************
         self.model_name = rospy.get_param('~model_name')
         rospy.loginfo('[%s] model name = %s' %(self.node_name, self.model_name))
         rospack = rospkg.RosPack()
-
         self.model_Base_Dir = rospack.get_path('placard_detection') + '/models/' + self.model_name + '/'
-        self.img_count = 0
-        self.counts = 0
+
+        # ***************************************************************
+        # Variables
+        # ***************************************************************
+        self.bridge = CvBridge()
+        self.pred_count = 0
         self.dim = (227, 227)
-        self.image = None
+        self.img = None;
 
         # ***************************************************************
         # Set up NCS
@@ -35,47 +39,67 @@ class PlacardNcsPredictionNode(object):
 
         #Subscriber
         self.sub_image_region = rospy.Subscriber("~region_proposal", RegionProposalImage, self.cbRegion, queue_size=1)
+        self.sub_image_raw = rospy.Subscriber("~image/image_raw", Image, self.cbImageRaw, queue_size=1)
 
     def cbRegion(self, region_msg):
+        # ***************************************************************
+        # Make sure that the device is working
+        # ***************************************************************
+        
         if self.device_work is True:
-
-            img_origin = self.bridge.imgmsg_to_cv2(region_msg.image_origin, "bgr8")
+            
+            # ***************************************************************
+            # Preprocessing
+            # ***************************************************************
+            if(region_msg.image_region.width is 0):
+                return
             img = self.bridge.imgmsg_to_cv2(region_msg.image_region, "bgr8")
-            img_cv = img.copy()
             img = cv2.resize(img, self.dim)
             img = img.astype(np.float32)
-        
             img_m = np.zeros((self.dim[0], self.dim[1], 3), np.float32)
             img_m[:] = (104, 116, 122)
             img = cv2.subtract(img, img_m)
             
-            # Send the image to the NCS
+            # ***************************************************************
+            # Send the image to NCS and get the result
+            # ***************************************************************
             self.graph.LoadTensor(img.astype(np.float16), 'user object')
-
             output, userobj = self.graph.GetResult()
-
             order = output.argsort()[::-1][:4]
 
+            # ***************************************************************
+            # Probability thresold
+            # ***************************************************************
             if(output[order[0]]*100 >= 95):
                 #cv2.imwrite("/home/tony/ncs/ncsdk/examples/caffe/CaffeNet/image/" + str(self.img_count) + ".jpg", img_cv)
-                
-                if str(order[0]) is  str(3):
-                    print('\n-------region predictions --------')
-                    x = region_msg.x
-                    y = region_msg.y
-                    w = region_msg.width
-                    h = region_msg.height
-                    cv2.rectangle(img_origin,(x, y),(x+w, y+h),(0,255,0),3)
+                print('\n-------region predictions --------')
+                x = region_msg.x
+                y = region_msg.y
+                w = region_msg.width
+                h = region_msg.height
+                if str(order[0]) is str(0):
+                    cv2.rectangle(self.img,(x, y),(x+w, y+h),(255,0,0),3)
+                    cv2.putText(self.img,'blue_circle',(x-50,y-5),cv2.FONT_HERSHEY_COMPLEX,0.3,(255,0,0),1)
+                elif str(order[0]) is str(1):
+                    cv2.rectangle(self.img,(x, y),(x+w, y+h),(0,255,0),3)
+                    cv2.putText(self.img,'green_triangle',(x-50,y-5),cv2.FONT_HERSHEY_COMPLEX,0.3,(0,255,0),1)
+                elif str(order[0]) is str(2):
+                    cv2.rectangle(self.img,(x, y),(x+w, y+h),(0,0,255),3)
+                    cv2.putText(self.img,'red_cross',(x-50,y-5),cv2.FONT_HERSHEY_COMPLEX,0.3,(0,0,255),1)
+                elif str(order[0]) is str(3):
+                    cv2.rectangle(self.img,(x, y),(x+w, y+h),(0,0,0),3)
+                    cv2.putText(self.img,'background',(x-50,y-5),cv2.FONT_HERSHEY_COMPLEX,0.3,(0,0,0),1)
+                img_msg = Image()
+                img_msg = self.bridge.cv2_to_imgmsg(self.img, "bgr8")
+                self.pub_image_pred.publish(img_msg)
 
-                    if self.image is not None:
-                        img_msg = Image()
-                        img_msg = self.bridge.cv2_to_imgmsg(self.image, "bgr8")
-                        self.pub_image_pred.publish(img_msg)
+                for i in range(0, 4):
+                    print str(self.pred_count), (' prediction ' + str(i) + ' (probability ' + str(output[order[i]]*100) + '%) is ' + self.labels[order[i]] + '  label index is: ' + str(order[i]) )        
+                self.pred_count += 1
 
-                    for i in range(0, 4):
-                        print str(self.img_count), (' prediction ' + str(i) + ' (probability ' + str(output[order[i]]*100) + '%) is ' + self.labels[order[i]] + '  label index is: ' + str(order[i]) )        
-                    self.img_count += 1
-
+    def cbImageRaw(self, img_msg):
+        self.img = self.bridge.imgmsg_to_cv2(img_msg, "bgr8")
+        
     def initial(self):
         self.device_work = False
         mvnc.SetGlobalOption(mvnc.GlobalOption.LOG_LEVEL, 2)
