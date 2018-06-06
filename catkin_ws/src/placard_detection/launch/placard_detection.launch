@@ -1,0 +1,23 @@
+<launch>
+	<arg name="caffe_model" default="robotx_duckietown_bvlc_3_classes"/>
+    <arg name="input_shape" default="input_shape"/>
+    <arg name="local" default="false" doc="true for running on laptop. false for running on vehicle."/>
+
+    <!-- Pi Camera -->
+    <node unless="$(arg local)" name="camera_white_balance" pkg="placard_detection" type="camera_white_balance.py" output="screen" clear_params="true" required="true">
+        <rosparam command="load" file="$(find placard_detection)/config/pi_camera.yaml"/>
+    </node>
+
+    <!-- Region potential extract node by MSER -->
+    <remap from="~compressed/image_compressed" to="/wama/camera_node/image/compressed"/>
+    <node name="mser_region_extraction" pkg="placard_detection" type="mser_region_extraction.py"  output="screen" clear_params="true" required="true">
+    </node>
+
+    <!-- NCS prediction -->
+    <!--remap from="image/image_mser_region" to="/mser_region_extraction/image/image_mser_region"/>
+    <node name="placard_prediction_ncs" pkg="placard_detection" type="placard_prediction_ncs.py"  output="screen" clear_params="true" required="true">
+        <param name="caffe_model" value="$(arg caffe_model)"/>
+        <param name="input_shape" value="$(arg input_shape)"/>
+    </node-->    
+
+</launch>
