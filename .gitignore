@@ -1,7 +1,4 @@
 *.vscode
 catkin_ws/build
 catkin_ws/devel
-<<<<<<< HEAD
 graph*
-=======
->>>>>>> 5bf980df206899e4e5ba314c2641c4a70980f7eb
