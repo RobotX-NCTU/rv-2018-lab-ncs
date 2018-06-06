@@ -2,12 +2,11 @@
 import rospy
 from sensor_msgs.msg import Image, CompressedImage
 import os
+
 from cv_bridge import CvBridge, CvBridgeError
 from mvnc import mvncapi as mvnc
 import cv2
 import numpy as np
-import rospkg
-from placard_msgs.msg import RegionProposalImage
 
 class PlacardNcsPredictionNode(object):
     def __init__(self):
@@ -90,6 +89,7 @@ class PlacardNcsPredictionNode(object):
         labels_file=self.model_Base_Dir + 'label.txt'
         self.labels = np.loadtxt(labels_file,str,delimiter='\t')
         self.device.OpenDevice()
+
         network_blob=self.model_Base_Dir + 'graph'
 
         #Load blob
@@ -102,6 +102,7 @@ class PlacardNcsPredictionNode(object):
         # ***************************************************************
         # Check device found
         # ***************************************************************
+
         self.devices = mvnc.EnumerateDevices()
         if len(self.devices) == 0:
             self.device_work = False

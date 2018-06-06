@@ -1,5 +1,10 @@
 <launch>
+<<<<<<< HEAD
 	<arg name="model_name" default="CaffeNet"/>
+=======
+	<arg name="caffe_model" default="robotx_duckietown_bvlc_3_classes"/>
+    <arg name="input_shape" default="input_shape"/>
+>>>>>>> 5bf980df206899e4e5ba314c2641c4a70980f7eb
     <arg name="local" default="false" doc="true for running on laptop. false for running on vehicle."/>
 
     <!-- Pi Camera -->
@@ -8,14 +13,26 @@
     </node>
 
     <!-- Region potential extract node by MSER -->
+<<<<<<< HEAD
     <remap from="mser_region_extraction/compressed/image_compressed" to="/wama/camera_node/image/compressed"/>
+=======
+    <remap from="~compressed/image_compressed" to="/wama/camera_node/image/compressed"/>
+>>>>>>> 5bf980df206899e4e5ba314c2641c4a70980f7eb
     <node name="mser_region_extraction" pkg="placard_detection" type="mser_region_extraction.py"  output="screen" clear_params="true" required="true">
     </node>
 
     <!-- NCS prediction -->
+<<<<<<< HEAD
     <remap from="placard_prediction_ncs/region_proposal" to="/mser_region_extraction/region_proposal"/>
     <node name="placard_prediction_ncs" pkg="placard_detection" type="placard_prediction_ncs.py"  output="screen" clear_params="true" required="true">
         <param name="model_name" value="$(arg model_name)"/>
     </node>    
+=======
+    <!--remap from="image/image_mser_region" to="/mser_region_extraction/image/image_mser_region"/>
+    <node name="placard_prediction_ncs" pkg="placard_detection" type="placard_prediction_ncs.py"  output="screen" clear_params="true" required="true">
+        <param name="caffe_model" value="$(arg caffe_model)"/>
+        <param name="input_shape" value="$(arg input_shape)"/>
+    </node-->    
+>>>>>>> 5bf980df206899e4e5ba314c2641c4a70980f7eb
 
 </launch>
