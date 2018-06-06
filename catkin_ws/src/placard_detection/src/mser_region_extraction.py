@@ -25,7 +25,7 @@ class MserRegionExtraction(object):
         self.sub_image = rospy.Subscriber("~compressed/image_compressed", CompressedImage, self.cbCompressedImage, queue_size=1)
 
     def cbCompressedImage(self, image_msg):
-        if self.counts == 15:
+        if self.counts == 10:
             
             self.counts = 0
             # ***************************************************************
@@ -74,9 +74,11 @@ class MserRegionExtraction(object):
                     region_msg.y = y
                     region_msg.width = w
                     region_msg.height = h
-                    self.pub_image_region_mser.publish(region_msg)
+                    if counts%3==0:
+                        self.pub_image_region_mser.publish(region_msg)
                     #Draw mser rectangle
                     cv2.rectangle(imgContours,(x, y),(x+w, y+h),(0,255,0),3)
+           
             #print "number of region potential = ", counts
 
             # ***************************************************************
