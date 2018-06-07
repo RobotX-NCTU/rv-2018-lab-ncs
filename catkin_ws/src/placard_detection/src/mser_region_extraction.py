@@ -58,12 +58,10 @@ class MserRegionExtraction(object):
             # ***************************************************************
             # Extract each rectangle of region proposal and publish
             # ***************************************************************
-            counts = 0
             for i, contour in enumerate(hulls):
                 x,y,w,h = cv2.boundingRect(contour)
                 img_region = img_cv[y:y+h, x:x+w]           
                 if w < 1.4*h and h < 1.4*w and h*w < 10000:
-                    counts += 1
                     img_msg = Image()
                     img_msg.header.stamp = rospy.Time.now()
                     img_msg = self.bridge.cv2_to_imgmsg(img_region, "bgr8")
@@ -74,8 +72,7 @@ class MserRegionExtraction(object):
                     region_msg.y = y
                     region_msg.width = w
                     region_msg.height = h
-                    if counts%3==0:
-                        self.pub_image_region_mser.publish(region_msg)
+                    self.pub_image_region_mser.publish(region_msg)
                     #Draw mser rectangle
                     cv2.rectangle(imgContours,(x, y),(x+w, y+h),(0,255,0),3)
            

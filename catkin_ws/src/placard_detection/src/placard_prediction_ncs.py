@@ -3,6 +3,7 @@ import rospy
 from sensor_msgs.msg import Image, CompressedImage
 from placard_msgs.msg import RegionProposalImage
 import os
+import time
 import rospkg
 from cv_bridge import CvBridge, CvBridgeError
 from mvnc import mvncapi as mvnc
@@ -46,8 +47,9 @@ class PlacardNcsPredictionNode(object):
         # Make sure that the device is working
         # ***************************************************************
         
+        t_start = time.clock()
         if self.device_work is True:
-            
+
             # ***************************************************************
             # Preprocessing
             # ***************************************************************
@@ -96,6 +98,8 @@ class PlacardNcsPredictionNode(object):
                 for i in range(0, 4):
                     print str(self.pred_count), (' prediction ' + str(i) + ' (probability ' + str(output[order[i]]*100) + '%) is ' + self.labels[order[i]] + '  label index is: ' + str(order[i]) )        
                 self.pred_count += 1
+        print "time taken = ", time.clock() - t_start
+
 
     def cbImageRaw(self, img_msg):
         self.img = self.bridge.imgmsg_to_cv2(img_msg, "bgr8")
