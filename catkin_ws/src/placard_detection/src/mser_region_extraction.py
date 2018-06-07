@@ -50,7 +50,7 @@ class MserRegionExtraction(object):
             # ***************************************************************
             # Create MSER and get the region proposal
             # ***************************************************************
-            mser = cv2.MSER_create()
+            mser = cv2.MSER_create(10, 60, 10000, 0.25, 0.2, 200, 1.01, 0.003, 5)
             imgContours = img_cv.copy()
             regions, _ = mser.detectRegions(img_gray)
             hulls = [cv2.convexHull(p.reshape(-1, 1, 2)) for p in regions]
